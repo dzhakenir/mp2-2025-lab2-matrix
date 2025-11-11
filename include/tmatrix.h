@@ -26,21 +26,22 @@ protected:
 public:
   TDynamicVector(size_t size = 1) : sz(size)
   {
-    if (sz == 0)
-      throw out_of_range("Vector size should be greater than zero");
+    if (sz <= 0)throw out_of_range("Vector size should be greater than zero");
     if (sz > MAX_VECTOR_SIZE)throw "too large vector";
     pMem = new T[sz]();// {}; // У типа T д.б. констуктор по умолчанию
   }
   TDynamicVector(T* arr, size_t s) : sz(s)
   {
     assert(arr != nullptr && "TDynamicVector ctor requires non-nullptr arg");
+    if (sz <= 0)throw out_of_range("Vector size should be greater than zero");
+    if (sz > MAX_VECTOR_SIZE)throw "too large vector";
     pMem = new T[sz];
     std::copy(arr, arr + sz, pMem);
   }
   TDynamicVector(const TDynamicVector& v): sz(v.sz)
   {
       pMem = new T[sz];
-      std::copy(&v, &v + sz, pMem);
+      std::copy(v.pMem, v.pMem + sz, pMem);
   }
   TDynamicVector(TDynamicVector&& v) noexcept
   {
@@ -57,7 +58,7 @@ public:
   TDynamicVector& operator=(const TDynamicVector& v)
   {
       if (&v != this) {
-          if (sz == v.sz)copy(v.pMem, v.pMem + sz, pMem);
+          if (sz == v.sz)std::copy(v.pMem, v.pMem + sz, pMem);
           delete[] pMem;
           sz = v.sz;
           pMem = new T[sz];
@@ -67,6 +68,7 @@ public:
   }
   TDynamicVector& operator=(TDynamicVector&& v) noexcept
   {
+      delete[] pMem;
       pMem = v.pMem;
       sz = v.sz;
       v.sz = 0;
@@ -88,12 +90,12 @@ public:
   // индексация с контролем
   T& at(size_t ind)
   {
-      if (ind<0 || ind>sz)throw "[] index out of range";
+      if (ind<0 || ind>=sz)throw "[] index out of range";
       return pMem[ind];
   }
   const T& at(size_t ind) const
   {
-      if (ind<0 || ind>sz)throw "[] index out of range";
+      if (ind<0 || ind>=sz)throw "[] index out of range";
       return pMem[ind];
   }
 
