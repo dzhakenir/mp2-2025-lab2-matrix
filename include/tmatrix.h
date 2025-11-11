@@ -1,159 +1,272 @@
-#include "tmatrix.h"
+// ННГУ, ИИТММ, Курс "Алгоритмы и структуры данных"
+//
+// Copyright (c) Сысоев А.В.
+//
+//
 
-#include <gtest.h>
+#ifndef __TDynamicMatrix_H__
+#define __TDynamicMatrix_H__
 
-TEST(TDynamicMatrix, can_create_matrix_with_positive_length)
+#include <iostream>
+using namespace std;
+
+using namespace std;
+
+const int MAX_VECTOR_SIZE = 100000000;
+const int MAX_MATRIX_SIZE = 10000;
+
+// Динамический вектор - 
+// шаблонный вектор на динамической памяти
+template<typename T>
+class TDynamicVector
 {
-  ASSERT_NO_THROW(TDynamicMatrix<int> m(5));
-}
+protected:
+  size_t sz;
+  T* pMem;
+public:
+  TDynamicVector(size_t size = 1) : sz(size)
+  {
+    if (sz <= 0)throw out_of_range("Vector size should be greater than zero");
+    if (sz > MAX_VECTOR_SIZE)throw "too large vector";
+    pMem = new T[sz]();// {}; // У типа T д.б. констуктор по умолчанию
+  }
+  TDynamicVector(T* arr, size_t s) : sz(s)
+  {
+    assert(arr != nullptr && "TDynamicVector ctor requires non-nullptr arg");
+    if (sz <= 0)throw out_of_range("Vector size should be greater than zero");
+    if (sz > MAX_VECTOR_SIZE)throw "too large vector";
+    pMem = new T[sz];
+    std::copy(arr, arr + sz, pMem);
+  }
+  TDynamicVector(const TDynamicVector& v): sz(v.sz)
+  {
+      pMem = new T[sz];
+      std::copy(v.pMem, v.pMem + sz, pMem);
+  }
+  TDynamicVector(TDynamicVector&& v) noexcept
+  {
+      pMem = v.pMem;
+      sz = v.sz;
+      v.sz = 0;
+      v.pMem = nullptr;
+  }
+  ~TDynamicVector()
+  {
+      sz = 0;
+      delete[] pMem;
+  }
+  TDynamicVector& operator=(const TDynamicVector& v)
+  {
+      if (&v != this) {
+          if (sz == v.sz)std::copy(v.pMem, v.pMem + sz, pMem);
+          delete[] pMem;
+          sz = v.sz;
+          pMem = new T[sz];
+          copy(v.pMem, v.pMem + sz, pMem);
+      }
+      return *this;
+  }
+  TDynamicVector& operator=(TDynamicVector&& v) noexcept
+  {
+      delete[] pMem;
+      pMem = v.pMem;
+      sz = v.sz;
+      v.sz = 0;
+      v.pMem = nullptr;
+      return *this;
+  }
 
-TEST(TDynamicMatrix, cant_create_too_large_matrix)
+  size_t size() const noexcept { return sz; }
+
+  // индексация
+  T& operator[](size_t ind)
+  {
+      return pMem[ind];
+  }
+  const T& operator[](size_t ind) const
+  {
+      return pMem[ind];
+  }
+  // индексация с контролем
+  T& at(size_t ind)
+  {
+      if (ind<0 || ind>=sz)throw "[] index out of range";
+      return pMem[ind];
+  }
+  const T& at(size_t ind) const
+  {
+      if (ind<0 || ind>=sz)throw "[] index out of range";
+      return pMem[ind];
+  }
+
+  // сравнение
+  bool operator==(const TDynamicVector& v) const noexcept
+  {
+      if (sz != v.sz)return false;
+      for (int i = 0; i < sz; i++)if (pMem[i] != v[i])return false;
+      return true;
+  }
+  bool operator!=(const TDynamicVector& v) const noexcept
+  {
+      return !(*this == v);
+  }
+
+  // скалярные операции
+  TDynamicVector operator+(T val)
+  {
+      TDynamicVector<T> t(sz);
+      for (int i = 0; i<sz; i++)t[i] = pMem[i]+val;
+      return t;
+  }
+  TDynamicVector operator-(T val)
+  {
+      TDynamicVector<T> t(sz);
+      for (int i = 0; i<sz; i++)t[i] = pMem[i] - val;
+      return t;
+  }
+  TDynamicVector operator*(T val)
+  {
+      TDynamicVector<T> t(sz);
+      for (int i = 0; i<sz; i++)t[i] = pMem[i] * val;
+      return t;
+  }
+
+  // векторные операции
+  TDynamicVector operator+(const TDynamicVector& v)
+  {
+      if (sz != v.sz)throw "+ lengths do not match";
+      TDynamicVector<T> t(sz);
+      for (int i = 0; i<sz; i++)t[i] = pMem[i] + v[i];
+      return t;
+  }
+  TDynamicVector operator-(const TDynamicVector& v)
+  {
+      if (sz != v.sz)throw "- lengths do not match";
+      TDynamicVector<T> t(sz);
+      for (int i = 0; i<sz; i++)t[i] = pMem[i] - v[i];
+      return t;
+  }
+  T operator*(const TDynamicVector& v) noexcept(noexcept(T()))
+  {
+      if (sz != v.sz)throw "* lengths do not match";
+      T t = 0;
+      for (int i = 0; i < sz; i++)t += pMem[i] * v[i];
+      return t;
+  }
+
+  friend void swap(TDynamicVector& lhs, TDynamicVector& rhs) noexcept
+  {
+    swap(lhs.sz, rhs.sz);
+    swap(lhs.pMem, rhs.pMem);
+  }
+
+  // ввод/вывод
+  friend istream& operator>>(istream& istr, TDynamicVector& v)
+  {
+    for (size_t i = 0; i < v.sz; i++)
+      istr >> v.pMem[i]; // требуется оператор>> для типа T
+    return istr;
+  }
+  friend ostream& operator<<(ostream& ostr, const TDynamicVector& v)
+  {
+    for (size_t i = 0; i < v.sz; i++)
+      ostr << v.pMem[i] << ' '; // требуется оператор<< для типа T
+    return ostr;
+  }
+};
+
+
+// Динамическая матрица - 
+// шаблонная матрица на динамической памяти
+template<typename T>
+class TDynamicMatrix : private TDynamicVector<TDynamicVector<T>>
 {
-  ASSERT_ANY_THROW(TDynamicMatrix<int> m(MAX_MATRIX_SIZE + 1));
-}
+  using TDynamicVector<TDynamicVector<T>>::pMem;
+  using TDynamicVector<TDynamicVector<T>>::sz;
+public:
+  TDynamicMatrix(size_t s = 1) : TDynamicVector<TDynamicVector<T>>(s)
+  {
+      sz = s;
+      if (s<0 || s>MAX_MATRIX_SIZE)throw "matrix size out of range";
+    for (size_t i = 0; i < sz; i++)
+      pMem[i] = TDynamicVector<T>(sz);
+  }
 
-TEST(TDynamicMatrix, throws_when_create_matrix_with_negative_length)
-{
-  ASSERT_ANY_THROW(TDynamicMatrix<int> m(-5));
-}
+  using TDynamicVector<TDynamicVector<T>>::operator[];
+  size_t size() const noexcept { return sz; }
 
-TEST(TDynamicMatrix, can_create_copied_matrix)
-{
-  TDynamicMatrix<int> m(5);
+  // сравнение
+  bool operator==(const TDynamicMatrix& m) const noexcept
+  {
+      if (sz != m.sz)return false;
+      for (int i = 0; i < sz; i++)if (pMem[i] != m[i])return false;
+      return true;
+  }
 
-  ASSERT_NO_THROW(TDynamicMatrix<int> m1(m));
-}
+  // матрично-скалярные операции
+  TDynamicVector<T> operator*(const T& val)
+  {
+      TDynamicVector<T> t(sz);
+      for (int i = 0; i<sz; i++)t[i] = pMem[i] * val;
+      return t;
+  }
 
-TEST(TDynamicMatrix, copied_matrix_is_equal_to_source_one)
-{
-	TDynamicMatrix<int> m1(5);
-	m1[0][0] = 1;
-	TDynamicMatrix<int> m2(m1);
-	EXPECT_EQ(m2[0][0], 1);
-}
+  // матрично-векторные операции
+  TDynamicVector<T> operator*(const TDynamicVector<T>& v)
+  {
+      if (sz != v.sz)throw "m*v lengths do not match";
+      TDynamicMatrix<T> t(sz);
+      for (int i = 0; i < sz; i++) {
+          for (int j = 0; j < sz; j++) {
+              for (int k = 0; k < sz; k++) {
+                  t[i][k] += (*this)[i][j] * m[k];
+              }
+          }
+      }
+  }
 
-TEST(TDynamicMatrix, copied_matrix_has_its_own_memory)
-{
-	TDynamicMatrix<int> m1(5);
-	m1[0][0] = 1;
-	TDynamicMatrix<int> m2(m1);
-	m2[0][0] = 2;
-	EXPECT_EQ(m1[0][0], 1);
-}
+  // матрично-матричные операции
+  TDynamicMatrix operator+(const TDynamicMatrix& m)
+  {
+      if (sz != m.sz)throw "m+m lengths do not match";
+      TDynamicMatrix<T> t(sz);
+      for (int i = 0; i < sz; i++)t[i] = (*this)[i] + m[i];
+      return t;
+  }
+  TDynamicMatrix operator-(const TDynamicMatrix& m)
+  {
+      if (sz != m.sz)throw "m-m lengths do not match";
+      TDynamicMatrix<T> t(sz);
+      for (int i = 0; i < sz; i++)t[i] = (*this)[i] + m[i];
+      return t;
+  }
+  TDynamicMatrix operator*(const TDynamicMatrix& m)
+  {
+      if (sz != m.sz)throw "m*m lengths do not match";
+      TDynamicMatrix<T> t(sz);
+      for (int i = 0; i < sz; i++){
+          for (int j = 0; j < sz; j++) {
+              for (int k = 0; k < sz; k++) {
+                  for (int l = 0; l < sz; l++) {
+                      t[i][j] += (*this)[i][k] * m[l][j];
+                  }
+              }
+          }
+      }
+      return t;
+  }
 
-TEST(TDynamicMatrix, can_get_size)
-{
-	TDynamicMatrix<int> m(5);
-	EXPECT_EQ(m.size(), 5);
-}
+  // ввод/вывод
+  friend istream& operator>>(istream& istr, TDynamicMatrix& v)
+  {
+      for (int i = 0; i < v.sz; i++)istr >> v[i];
+      return istr;
+  }
+  friend ostream& operator<<(ostream& ostr, const TDynamicMatrix& v)
+  {
+      for (int i = 0; i < v.sz; i++)ostr<<v[i]<<'\n';
+      return ostr;
+  }
+};
 
-TEST(TDynamicMatrix, can_set_and_get_element)
-{
-	TDynamicMatrix<int> m(5);
-	m[0][0] = 1;
-	EXPECT_EQ(m[0][0], 1);
-}
-/*
-TEST(TDynamicMatrix, throws_when_set_element_with_negative_index)
-{
-	TDynamicMatrix<int> m(5);
-	ASSERT_ANY_THROW((m.at(-1)).at(-1));
-}
-
-TEST(TDynamicMatrix, throws_when_set_element_with_too_large_index)
-{
-	TDynamicMatrix<int> m(5);
-	ASSERT_ANY_THROW(m[6][6]);
-}*/
-
-TEST(TDynamicMatrix, can_assign_matrix_to_itself)
-{
-	TDynamicMatrix<int> m(5);
-	ASSERT_NO_THROW(m = m);
-}
-
-TEST(TDynamicMatrix, can_assign_matrices_of_equal_size)
-{
-	TDynamicMatrix<int> m1(5);
-	TDynamicMatrix<int> m2(5);
-	m1[0][0] = 1;
-	m2 = m1;
-	EXPECT_EQ(m2[0][0], 1);
-}
-
-TEST(TDynamicMatrix, assign_operator_change_matrix_size)
-{
-	TDynamicMatrix<int> m1(5);
-	TDynamicMatrix<int> m2(6);
-	m2 = m1;
-	EXPECT_EQ(m2.size(),5);
-}
-
-TEST(TDynamicMatrix, can_assign_matrices_of_different_size)
-{
-	TDynamicMatrix<int> m1(5);
-	TDynamicMatrix<int> m2(6);
-	m1[0][0] = 1;
-	m2 = m1;
-	EXPECT_EQ(m2[0][0], 1);
-}
-
-TEST(TDynamicMatrix, compare_equal_matrices_return_true)
-{
-	TDynamicMatrix<int> m1(5);
-	TDynamicMatrix<int> m2(5);
-	m1[0][0] = 1;
-	m2[0][0] = 1;
-	EXPECT_EQ(m2[0][0], 1);
-}
-
-TEST(TDynamicMatrix, compare_matrix_with_itself_return_true)
-{
-	TDynamicMatrix<int> m(5);
-	m[0][0] = 1;
-	EXPECT_EQ(m == m, true);
-}
-
-TEST(TDynamicMatrix, matrices_with_different_size_are_not_equal)
-{
-	TDynamicMatrix<int> m1(5);
-	TDynamicMatrix<int> m2(6);
-	EXPECT_EQ(m1 == m2, false);
-}
-
-TEST(TDynamicMatrix, can_add_matrices_with_equal_size)
-{
-	TDynamicMatrix<int> m1(5);
-	TDynamicMatrix<int> m2(5);
-	m1[0][0] = 1;
-	m2[0][0] = 2;
-	TDynamicMatrix<int> m3(5);
-	m3 = m1 + m2;
-	EXPECT_EQ(m3[0][0], 3);
-}
-
-TEST(TDynamicMatrix, cant_add_matrices_with_not_equal_size)
-{
-	TDynamicMatrix<int> m1(5);
-	TDynamicMatrix<int> m2(6);
-	ASSERT_ANY_THROW(m1 + m2);
-}
-
-TEST(TDynamicMatrix, can_subtract_matrices_with_equal_size)
-{
-	TDynamicMatrix<int> m1(5);
-	TDynamicMatrix<int> m2(5);
-	m1[0][0] = 6;
-	m2[0][0] = 2;
-	TDynamicMatrix<int> m3(5);
-	m3 = m1 - m2;
-	EXPECT_EQ(m3[0][0], 4);
-}
-
-TEST(TDynamicMatrix, cant_subtract_matrixes_with_not_equal_size)
-{
-	TDynamicMatrix<int> m1(5);
-	TDynamicMatrix<int> m2(6);
-	ASSERT_ANY_THROW(m1 - m2);
-}
-
+#endif
