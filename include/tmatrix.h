@@ -88,12 +88,12 @@ public:
   // индексация с контролем
   T& at(size_t ind)
   {
-      if (ind<0 or ind>sz)throw "[] index out of range";
+      if (ind<0 || ind>sz)throw "[] index out of range";
       return pMem[ind];
   }
   const T& at(size_t ind) const
   {
-      if (ind<0 or ind>sz)throw "[] index out of range";
+      if (ind<0 || ind>sz)throw "[] index out of range";
       return pMem[ind];
   }
 
