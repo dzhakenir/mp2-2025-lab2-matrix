@@ -237,7 +237,7 @@ public:
   {
       if (sz != m.sz)throw "m-m lengths do not match";
       TDynamicMatrix<T> t(sz);
-      for (int i = 0; i < sz; i++)t[i] = (*this)[i] + m[i];
+      for (int i = 0; i < sz; i++)t[i] = (*this)[i] - m[i];
       return t;
   }
   TDynamicMatrix operator*(const TDynamicMatrix& m)
