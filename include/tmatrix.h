@@ -111,6 +111,7 @@ public:
       return !(*this == v);
   }
 
+
   // скалярные операции
   TDynamicVector operator+(T val)
   {
