@@ -147,7 +147,7 @@ public:
       for (int i = 0; i<sz; i++)t[i] = pMem[i] - v[i];
       return t;
   }
-  T operator*(const TDynamicVector& v) noexcept(noexcept(T()))
+  T operator*(const TDynamicVector& v) noexcept(T())
   {
       if (sz != v.sz)throw "* lengths do not match";
       T t = 0;
